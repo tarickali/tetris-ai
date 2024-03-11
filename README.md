@@ -8,4 +8,4 @@ This project is intended to give easy access to a customizable implementation of
 
 All dependencies for this project can be found in `requirements.txt`.
 
-To only run the main game you only need to install `pygame`. To run the main game and train associated agents, you will also need to install `numpy`, `torch`, and `matplotlib`.
+To only run the main game you only need to install `pygame` and `numpy`. To run the main game and train associated agents, you will also need to install `torch` and `matplotlib`.

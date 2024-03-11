@@ -3,13 +3,12 @@ from typing import Any
 from enum import Enum
 import random
 
-from .constants import SHAPES
+from constants import SHAPES
 from .grid import Grid
 from .tetromino import Tetromino
 
 
 class GameAction(Enum):
-    NONE = -1
     RIGHT = 0
     LEFT = 1
     DOWN = 2
@@ -49,9 +48,8 @@ class Game:
         self.level = 1
         self.can_hold = True
 
-    def transition(self, action: GameAction = GameAction.NONE) -> None:
-        # If NONE action is given, convert it to DOWN
-        if action == GameAction.NONE:
+    def transition(self, action: GameAction = None) -> None:
+        if action is None:
             action = GameAction.DOWN
 
         tetromino = self.current_tetromino.copy()

@@ -1,12 +1,10 @@
-import copy
+import numpy as np
 from .tetromino import Tetromino
 
 
 class Grid:
     def __init__(self, width: int, height: int) -> None:
-        self.width = width
-        self.height = height
-        self.board = [[0 for _ in range(self.width)] for _ in range(self.height)]
+        self.board = np.zeros((height, width), dtype=int)
 
     def check_inbounds(self, tetromino: Tetromino) -> bool:
         for x in range(tetromino.size[0]):
@@ -55,5 +53,13 @@ class Grid:
                 lines += 1
         return lines
 
-    def get_board(self) -> list[list[int]]:
-        return copy.deepcopy(self.board)
+    def get_board(self) -> np.ndarray:
+        return self.board.copy()
+
+    @property
+    def width(self) -> int:
+        return self.board.shape[1]
+
+    @property
+    def height(self) -> int:
+        return self.board.shape[0]

@@ -2,7 +2,7 @@ from typing import Any
 import pygame
 
 from arcade.engine.ui import Pane, Window
-from tetris.constants import *
+from constants import *
 
 
 class Renderer:

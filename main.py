@@ -2,7 +2,7 @@ import pygame
 import sys
 import random
 
-from tetris.constants import GRID_SHAPE, FPS, DELAY_TIME
+from constants import GRID_SHAPE, FPS, DELAY_TIME
 from tetris.game import Game, GameAction
 from renderer import Renderer
 
@@ -21,7 +21,7 @@ class InputHandler:
         pygame.event.clear()
 
     def process(self, command: int) -> GameAction:
-        action = self.mapping.get(command, GameAction.NONE)
+        action = self.mapping.get(command)
         pygame.event.clear()
         return action
 
@@ -44,7 +44,6 @@ def main():
     while not game.terminal():
         command = agent.select()
         action = input_handler.process(command)
-        # action = input_handler.process()
         state = game.transition(action)
         renderer.render(state)
 
