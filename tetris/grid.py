@@ -41,7 +41,7 @@ class Grid:
                     continue
                 self.board[tetromino.position[1] + y][
                     tetromino.position[0] + x
-                ] = tetromino.kind
+                ] = tetromino.num
 
     def clear_lines(self) -> int:
         lines = 0

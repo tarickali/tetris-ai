@@ -3,7 +3,7 @@ from typing import Any
 from enum import Enum
 import random
 
-from constants import SHAPES
+# from constants import SHAPES
 from .grid import Grid
 from .tetromino import Tetromino
 
@@ -18,13 +18,19 @@ class GameAction(Enum):
 
 
 class Game:
-    def __init__(self, width: int, height: int) -> None:
-        self.width = width
-        self.height = height
+    def __init__(self, config: dict[str, Any]) -> None:
+        self.width = config["width"]
+        self.height = config["height"]
+        self.shapes = config["shapes"]
+        self.colors = config["colors"]
+
+        self.stoi = {s: i + 1 for i, s in enumerate(sorted(self.shapes))}
+        self.itos = {i + 1: s for i, s in enumerate(sorted(self.shapes))}
+
         self.grid: Grid = None
         self.current_tetromino: Tetromino = None
-        self.next_tetrominos: list[int] = []
-        self.held_tetromino: int = -1
+        self.next_tetrominos: list[str] = []
+        self.held_tetromino: str = ""
 
         self.score: int = 0
         self.lines: int = 0
@@ -41,7 +47,7 @@ class Game:
         self.current_tetromino = self.create_tetromino(
             self.next_tetrominos.pop(), (self.width // 2, 0)
         )
-        self.held_tetromino = -1
+        self.held_tetromino = ""
 
         self.score = 0
         self.lines = 0
@@ -107,8 +113,12 @@ class Game:
     def terminal(self) -> bool:
         return not self.grid.check_valid(self.current_tetromino)
 
-    def create_tetromino(self, kind: int, position: tuple[int, int]) -> Tetromino:
-        return Tetromino(kind, SHAPES[kind - 1], position)
+    def generate_tetrominos(self, k: int) -> str | list[str]:
+        tetrominos = random.choices(population=list(self.shapes), k=k)
+        return tetrominos if k > 1 else tetrominos[0]
+
+    def create_tetromino(self, kind: str, position: tuple[int, int]) -> Tetromino:
+        return Tetromino(kind, self.stoi[kind], self.shapes[kind], position)
 
     def place_tetromino(self, tetromino: Tetromino):
         self.grid.place(tetromino)
@@ -135,9 +145,10 @@ class Game:
                 if self.current_tetromino.shape[y][x] == 0:
                     continue
                 # Set the value at the grid positino to the tetromino's kind
+                # print(self.current_tetromino.position)
                 board[self.current_tetromino.position[1] + y][
                     self.current_tetromino.position[0] + x
-                ] = self.current_tetromino.kind
+                ] = self.current_tetromino.num
 
         return {
             "board": board,
@@ -146,8 +157,3 @@ class Game:
             "score": self.score,
             "lines": self.lines,
         }
-
-    @staticmethod
-    def generate_tetrominos(k: int) -> int | list[int]:
-        tetrominos = random.choices(population=range(1, len(SHAPES) + 1), k=k)
-        return tetrominos if k > 1 else tetrominos[0]

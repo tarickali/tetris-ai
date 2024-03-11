@@ -4,12 +4,17 @@ import copy
 
 class Tetromino:
     def __init__(
-        self, kind: int, shapes: list[list[list[int]]], position: tuple[int, int]
+        self,
+        kind: str,
+        num: int,
+        shapes: list[list[list[int]]],
+        position: tuple[int, int],
     ) -> None:
-        self.kind = kind
-        self.shapes = shapes
-        self.rotation = 0
-        self.position = position
+        self.kind = kind  # used for indexing into game.shapes
+        self.num = num  # used for intger grid
+        self.shapes = shapes  # references index in game.shapes
+        self.rotation = 0  # index into shapes
+        self.position = position  # for placement on grid (top-left)
 
     def rotate(self) -> None:
         self.rotation = (self.rotation + 1) % len(self.shapes)

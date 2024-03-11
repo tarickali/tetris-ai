@@ -1,10 +1,11 @@
-import pygame
 import sys
+import pygame
 import random
 
-from constants import GRID_SHAPE, FPS, DELAY_TIME
+from constants import *
 from tetris.game import Game, GameAction
 from renderer import Renderer
+from configs import load_config
 
 
 class InputHandler:
@@ -35,17 +36,19 @@ def main():
     pygame.init()
     clock = pygame.time.Clock()
 
-    input_handler = InputHandler()
-    renderer = Renderer()
-    game = Game(*GRID_SHAPE)
+    config = load_config("classic")
+    game = Game(config)
+    renderer = Renderer(game)
+
+    handler = InputHandler()
     agent = Agent()
 
     game.start()
     while not game.terminal():
         command = agent.select()
-        action = input_handler.process(command)
-        state = game.transition(action)
-        renderer.render(state)
+        action = handler.process(command)
+        game.transition(action)
+        renderer.render()
 
         clock.tick(FPS)
         pygame.time.wait(DELAY_TIME)

@@ -2,11 +2,14 @@ from typing import Any
 import pygame
 
 from arcade.engine.ui import Pane, Window
+from tetris.game import Game
 from constants import *
 
 
 class Renderer:
-    def __init__(self) -> None:
+    def __init__(self, game: Game) -> None:
+        self.game = game
+
         panes = {
             "main": Pane(
                 MAIN_PANE_SHAPE, MAIN_PANE_POSITION, MAIN_PANE_SCALE, (2, -1, "red")
@@ -21,7 +24,8 @@ class Renderer:
         self.window = Window(SCREEN_SHAPE, panes)
         self.font = pygame.font.Font(None, FONT_SIZE)
 
-    def render(self, state: dict[str, Any]) -> None:
+    def render(self) -> None:
+        state = self.game.get_state()
         self.draw_main_pane(state)
         self.draw_side_pane(state)
         self.draw_info_pane(state)
@@ -38,15 +42,15 @@ class Renderer:
 
         for y in range(len(state["board"])):
             for x in range(len(state["board"][y])):
-                kind = state["board"][y][x]
-                if kind == 0:
+                num = state["board"][y][x]
+                if num == 0:
                     continue
 
                 self.draw_block(
                     main_pane.surface,
                     (x * CELL_SHAPE[0], y * CELL_SHAPE[1]),
                     CELL_SHAPE,
-                    COLORS[kind - 1],
+                    self.game.colors[self.game.itos[num]],
                 )
 
     def draw_block(
@@ -64,10 +68,10 @@ class Renderer:
         surface: pygame.Surface,
         position: tuple[int, int],
         shape: tuple[int, int],
-        kind: int,
+        kind: str,
     ):
-        tetromino = SHAPES[kind - 1][0]
-        color = COLORS[kind - 1]
+        tetromino = self.game.shapes[kind][0]
+        color = self.game.colors[kind]
 
         for y in range(len(tetromino)):
             for x in range(len(tetromino[y])):
@@ -92,7 +96,7 @@ class Renderer:
 
         side_text = self.font.render("Held Tetromino", False, "white", None)
         side_pane.surface.blit(side_text, side_text.get_rect(topleft=(20, 150)))
-        if state["held_tetromino"] != -1:
+        if state["held_tetromino"]:
             self.draw_tetromino(
                 side_pane.surface, (20, 180), (20, 20), state["held_tetromino"]
             )
