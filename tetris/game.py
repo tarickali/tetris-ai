@@ -140,6 +140,15 @@ class Game:
         # Clear hold state if tetromino was placed
         self.can_hold = True
 
+    def render(self) -> None:
+        grid = self.grid.copy()
+        grid.place(self.current_tetromino)
+
+        grid.render()
+        print(
+            f"Next: {self.next_tetrominos} | Held: {self.held_tetromino} || score {self.score} | lines {self.lines}"
+        )
+
     def seed(self, root: int) -> None:
         self.rng.seed(root)
 
@@ -171,21 +180,11 @@ class Game:
         save_json(path, state)
 
     def state(self) -> dict[str, Any]:
-        grid = self.grid.state()
-
-        for x in range(self.current_tetromino.size[0]):
-            for y in range(self.current_tetromino.size[1]):
-                # Skip white-space of the tetromino
-                if self.current_tetromino.shape[y][x] == 0:
-                    continue
-                # Set the value at the grid positino to the tetromino's kind
-                # print(self.current_tetromino.position)
-                grid[self.current_tetromino.position[1] + y][
-                    self.current_tetromino.position[0] + x
-                ] = self.current_tetromino.num
+        grid = self.grid.copy()
+        grid.place(self.current_tetromino)
 
         return {
-            "grid": grid,
+            "grid": grid.state(),
             "next_tetrominos": np.array([self.stoi[s] for s in self.next_tetrominos]),
             "held_tetromino": self.stoi[self.held_tetromino],
             "score": self.score,

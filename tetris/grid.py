@@ -1,3 +1,5 @@
+from __future__ import annotations
+import copy
 import numpy as np
 from .tetromino import Tetromino
 
@@ -37,8 +39,10 @@ class Grid:
     def place(self, tetromino: Tetromino) -> None:
         for x in range(tetromino.size[0]):
             for y in range(tetromino.size[1]):
+                # Skip white-space of the tetromino
                 if tetromino.shape[y][x] == 0:
                     continue
+                # Set the value at the grid positino to the tetromino's kind
                 self.board[tetromino.position[1] + y][
                     tetromino.position[0] + x
                 ] = tetromino.num
@@ -53,8 +57,20 @@ class Grid:
                 lines += 1
         return lines
 
+    def render(self) -> None:
+        print(" -" + "--" * self.width)
+        for y in range(self.height):
+            print("|", end=" ")
+            for x in range(self.width):
+                print(self.board[y][x], end=" ")
+            print("|")
+        print(" -" + "--" * self.width)
+
     def load(self, state: list[list[int]]) -> None:
         self.board = np.array(state)
+
+    def copy(self) -> Grid:
+        return copy.deepcopy(self)
 
     def state(self) -> np.ndarray:
         return self.board.copy()

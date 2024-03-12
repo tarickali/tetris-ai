@@ -48,21 +48,14 @@ def main():
     game.seed(1)
     game.start()
 
-    # for _ in range(10):
-    #     game.transition(GameAction.DROP)
-
-    # print(game.state())
-
     # path = Path.joinpath(Path.cwd(), "checkpoints/state_1.json")
     # game.save(path, False)
     # game.load(path)
 
     while not game.terminal():
-        # while False:
         command = agent.select()
         action = handler.process(command)
         game.transition(action)
-        # print(game.state())
         renderer.render()
 
         clock.tick(FPS)
@@ -72,5 +65,17 @@ def main():
     sys.exit()
 
 
+def test():
+    config = load_config("classic")
+    game = Game(config)
+
+    game.seed(0)
+    game.start()
+    game.render()
+
+    # while not game.terminal():
+    #     pass
+
+
 if __name__ == "__main__":
-    main()
+    test()
