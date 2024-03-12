@@ -30,7 +30,7 @@ class Game:
         self.stoi = {s: i + 1 for i, s in enumerate(sorted(self.shapes))} | {"": 0}
         self.itos = {i + 1: s for i, s in enumerate(sorted(self.shapes))} | {0: ""}
 
-        self.grid: Grid = None
+        self.grid: Grid = Grid(self.width, self.height)
         self.current_tetromino: Tetromino = None
         self.next_tetrominos: deque[str] = deque([])
         self.held_tetromino: str = ""
@@ -46,7 +46,6 @@ class Game:
         self.rng = Random()
 
     def start(self) -> None:
-        self.grid = Grid(self.width, self.height)
         # Generate bag_size + 1 tetrominos with the last being used for the current tetromino
         self.next_tetrominos.extend(
             self.generate_tetrominos(self._tetromino_bag_size + 1)
@@ -124,8 +123,10 @@ class Game:
         tetrominos = self.rng.choices(population=list(self.shapes), k=k)
         return tetrominos if k > 1 else tetrominos[0]
 
-    def create_tetromino(self, kind: str, position: tuple[int, int]) -> Tetromino:
-        return Tetromino(kind, self.stoi[kind], self.shapes[kind], position)
+    def create_tetromino(
+        self, kind: str, position: tuple[int, int], rotation: int = 0
+    ) -> Tetromino:
+        return Tetromino(kind, position, rotation, self.stoi[kind], self.shapes[kind])
 
     def place(self, tetromino: Tetromino):
         self.grid.place(tetromino)
@@ -149,10 +150,10 @@ class Game:
         grid = self.grid.copy()
         grid.place(self.current_tetromino)
 
-        grid.render()
         print(
             f"Curr: {self.current_tetromino.kind} | Next: {self.next_tetrominos[0]} | Held: {self.held_tetromino} || Score: {self.score} | Lines: {self.lines}"
         )
+        grid.render()
 
     def seed(self, root: int) -> None:
         self.rng.seed(root)
@@ -161,7 +162,8 @@ class Game:
         state = load_json(path)
 
         self.grid.load(state["grid"])
-        self.next_tetrominos.extend([self.itos[s] for s in state["next_tetrominos"]])
+        self.current_tetromino = self.create_tetromino(**state["current_tetromino"])
+        self.next_tetrominos = deque([self.itos[s] for s in state["next_tetrominos"]])
         self.held_tetromino = self.itos[state["held_tetromino"]]
         self.score = state["score"]
         self.lines = state["lines"]
@@ -190,6 +192,7 @@ class Game:
 
         return {
             "grid": grid.state(),
+            "current_tetromino": self.current_tetromino.state(),
             "next_tetrominos": np.array([self.stoi[s] for s in self.next_tetrominos]),
             "held_tetromino": self.stoi[self.held_tetromino],
             "score": self.score,
