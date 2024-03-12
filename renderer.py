@@ -3,7 +3,30 @@ import pygame
 
 from arcade.engine.ui import Pane, Window
 from tetris.game import Game
-from constants import *
+
+################################################################################
+# Constants
+################################################################################
+# Grid cells
+CELL_SHAPE = (20, 20)
+
+# Screen
+SCREEN_SHAPE = (600, 600)
+
+# NOTE: These are defined in pixels
+MAIN_PANE_SHAPE = (400, 400)
+MAIN_PANE_POSITION = (10, 10)
+MAIN_PANE_SCALE = (1.0, 1.0)
+SIDE_PANE_SHAPE = (100, 300)
+SIDE_PANE_POSITION = (420, 10)
+SIDE_PANE_SCALE = (1.0, 1.0)
+INFO_PANE_SHAPE = (100, 100)
+INFO_PANE_POSITION = (420, 310)
+INFO_PANE_SCALE = (1.0, 1.0)
+
+# Fonts
+FONT_SIZE = 15
+################################################################################
 
 
 class Renderer:
@@ -25,7 +48,7 @@ class Renderer:
         self.font = pygame.font.Font(None, FONT_SIZE)
 
     def render(self) -> None:
-        state = self.game.get_state()
+        state = self.game.state()
         self.draw_main_pane(state)
         self.draw_side_pane(state)
         self.draw_info_pane(state)
@@ -40,9 +63,9 @@ class Renderer:
         main_pane.surface.fill("black")
         self.draw_gridlines(main_pane.surface)
 
-        for y in range(len(state["board"])):
-            for x in range(len(state["board"][y])):
-                num = state["board"][y][x]
+        for y in range(len(state["grid"])):
+            for x in range(len(state["grid"][y])):
+                num = state["grid"][y][x]
                 if num == 0:
                     continue
 
@@ -68,10 +91,10 @@ class Renderer:
         surface: pygame.Surface,
         position: tuple[int, int],
         shape: tuple[int, int],
-        kind: str,
+        num: str,
     ):
-        tetromino = self.game.shapes[kind][0]
-        color = self.game.colors[kind]
+        tetromino = self.game.shapes[self.game.itos[num]][0]
+        color = self.game.colors[self.game.itos[num]]
 
         for y in range(len(tetromino)):
             for x in range(len(tetromino[y])):
@@ -111,8 +134,8 @@ class Renderer:
         info_pane.surface.blit(lines_text, score_text.get_rect(topleft=(10, 30)))
 
     def draw_gridlines(self, display: pygame.Surface):
-        for y in range(GRID_SHAPE[1]):
-            for x in range(GRID_SHAPE[0]):
+        for y in range(self.game.height):
+            for x in range(self.game.width):
                 rect = pygame.Rect(x * CELL_SHAPE[0], y * CELL_SHAPE[1], *CELL_SHAPE)
                 pygame.draw.rect(display, "white", rect, 1)
 

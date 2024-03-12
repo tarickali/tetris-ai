@@ -3,7 +3,8 @@ from typing import Any
 from enum import Enum
 import random
 
-# from constants import SHAPES
+import numpy as np
+
 from .grid import Grid
 from .tetromino import Tetromino
 
@@ -24,8 +25,8 @@ class Game:
         self.shapes = config["shapes"]
         self.colors = config["colors"]
 
-        self.stoi = {s: i + 1 for i, s in enumerate(sorted(self.shapes))}
-        self.itos = {i + 1: s for i, s in enumerate(sorted(self.shapes))}
+        self.stoi = {s: i + 1 for i, s in enumerate(sorted(self.shapes))} | {"": 0}
+        self.itos = {i + 1: s for i, s in enumerate(sorted(self.shapes))} | {0: ""}
 
         self.grid: Grid = None
         self.current_tetromino: Tetromino = None
@@ -77,7 +78,7 @@ class Game:
                         tetromino.position[0],
                         tetromino.position[1] - 1,
                     )
-                    self.place_tetromino(tetromino)
+                    self.place(tetromino)
             case GameAction.DROP:
                 while self.grid.check_valid(tetromino):
                     tetromino.position = (
@@ -85,7 +86,7 @@ class Game:
                         tetromino.position[1] + 1,
                     )
                 tetromino.position = (tetromino.position[0], tetromino.position[1] - 1)
-                self.place_tetromino(tetromino)
+                self.place(tetromino)
             case GameAction.ROTATE:
                 tetromino.rotate()
                 if self.grid.check_valid(tetromino):
@@ -93,7 +94,7 @@ class Game:
             case GameAction.HOLD:
                 if self.can_hold:
                     # If no tetromino is currently being held, use the next tetromino
-                    if self.held_tetromino == -1:
+                    if not self.held_tetromino:
                         if len(self.next_tetrominos) == 0:
                             self.next_tetrominos = self.generate_tetrominos(
                                 self._tetromino_bag_size
@@ -108,7 +109,7 @@ class Game:
         # - Update level
         # - How does level affect game?
 
-        return self.get_state()
+        return self.state()
 
     def terminal(self) -> bool:
         return not self.grid.check_valid(self.current_tetromino)
@@ -120,7 +121,7 @@ class Game:
     def create_tetromino(self, kind: str, position: tuple[int, int]) -> Tetromino:
         return Tetromino(kind, self.stoi[kind], self.shapes[kind], position)
 
-    def place_tetromino(self, tetromino: Tetromino):
+    def place(self, tetromino: Tetromino):
         self.grid.place(tetromino)
         lines = self.grid.clear_lines()
         self.lines += lines
@@ -136,8 +137,8 @@ class Game:
         # Clear hold state if tetromino was placed
         self.can_hold = True
 
-    def get_state(self) -> dict[str, Any]:
-        board = self.grid.get_board()
+    def state(self) -> dict[str, Any]:
+        grid = self.grid.state()
 
         for x in range(self.current_tetromino.size[0]):
             for y in range(self.current_tetromino.size[1]):
@@ -146,14 +147,14 @@ class Game:
                     continue
                 # Set the value at the grid positino to the tetromino's kind
                 # print(self.current_tetromino.position)
-                board[self.current_tetromino.position[1] + y][
+                grid[self.current_tetromino.position[1] + y][
                     self.current_tetromino.position[0] + x
                 ] = self.current_tetromino.num
 
         return {
-            "board": board,
-            "next_tetrominos": self.next_tetrominos,
-            "held_tetromino": self.held_tetromino,
+            "grid": grid,
+            "next_tetrominos": np.array([self.stoi[s] for s in self.next_tetrominos]),
+            "held_tetromino": self.stoi[self.held_tetromino],
             "score": self.score,
             "lines": self.lines,
         }

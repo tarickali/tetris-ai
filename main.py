@@ -2,10 +2,12 @@ import sys
 import pygame
 import random
 
-from constants import *
 from tetris.game import Game, GameAction
 from renderer import Renderer
 from configs import load_config
+
+FPS = 60
+DELAY_TIME = 60
 
 
 class InputHandler:
@@ -48,6 +50,7 @@ def main():
         command = agent.select()
         action = handler.process(command)
         game.transition(action)
+        # print(game.state())
         renderer.render()
 
         clock.tick(FPS)

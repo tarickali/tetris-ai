@@ -53,7 +53,7 @@ class Grid:
                 lines += 1
         return lines
 
-    def get_board(self) -> np.ndarray:
+    def state(self) -> np.ndarray:
         return self.board.copy()
 
     @property
