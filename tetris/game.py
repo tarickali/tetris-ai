@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Any
+from collections import deque
 from enum import Enum
 from random import Random
 
@@ -31,7 +32,7 @@ class Game:
 
         self.grid: Grid = None
         self.current_tetromino: Tetromino = None
-        self.next_tetrominos: list[str] = []
+        self.next_tetrominos: deque[str] = deque([])
         self.held_tetromino: str = ""
 
         self.score: int = 0
@@ -47,9 +48,11 @@ class Game:
     def start(self) -> None:
         self.grid = Grid(self.width, self.height)
         # Generate bag_size + 1 tetrominos with the last being used for the current tetromino
-        self.next_tetrominos = self.generate_tetrominos(self._tetromino_bag_size + 1)
+        self.next_tetrominos.extend(
+            self.generate_tetrominos(self._tetromino_bag_size + 1)
+        )
         self.current_tetromino = self.create_tetromino(
-            self.next_tetrominos.pop(), (self.width // 2, 0)
+            self.next_tetrominos.popleft(), (self.width // 2, 0)
         )
         self.held_tetromino = ""
 
@@ -99,10 +102,10 @@ class Game:
                     # If no tetromino is currently being held, use the next tetromino
                     if not self.held_tetromino:
                         if len(self.next_tetrominos) == 0:
-                            self.next_tetrominos = self.generate_tetrominos(
-                                self._tetromino_bag_size
+                            self.next_tetrominos.extend(
+                                self.generate_tetrominos(self._tetromino_bag_size)
                             )
-                        self.held_tetromino = self.next_tetrominos.pop()
+                        self.held_tetromino = self.next_tetrominos.popleft()
                     self.current_tetromino = self.create_tetromino(
                         self.held_tetromino, (self.width // 2, 0)
                     )
@@ -131,11 +134,13 @@ class Game:
         self.score += lines * self._score_multipliers[lines]
         if len(self.next_tetrominos) >= 1:
             self.current_tetromino = self.create_tetromino(
-                self.next_tetrominos.pop(), (self.width // 2, 0)
+                self.next_tetrominos.popleft(), (self.width // 2, 0)
             )
         # Generate new tetrominos if all the next tetrominos have been used
         if len(self.next_tetrominos) == 0:
-            self.next_tetrominos = self.generate_tetrominos(self._tetromino_bag_size)
+            self.next_tetrominos.extend(
+                self.generate_tetrominos(self._tetromino_bag_size)
+            )
 
         # Clear hold state if tetromino was placed
         self.can_hold = True
@@ -146,7 +151,7 @@ class Game:
 
         grid.render()
         print(
-            f"Next: {self.next_tetrominos} | Held: {self.held_tetromino} || score {self.score} | lines {self.lines}"
+            f"Curr: {self.current_tetromino.kind} | Next: {self.next_tetrominos[0]} | Held: {self.held_tetromino} || Score: {self.score} | Lines: {self.lines}"
         )
 
     def seed(self, root: int) -> None:
@@ -156,7 +161,7 @@ class Game:
         state = load_json(path)
 
         self.grid.load(state["grid"])
-        self.next_tetrominos = [self.itos[s] for s in state["next_tetrominos"]]
+        self.next_tetrominos.extend([self.itos[s] for s in state["next_tetrominos"]])
         self.held_tetromino = self.itos[state["held_tetromino"]]
         self.score = state["score"]
         self.lines = state["lines"]

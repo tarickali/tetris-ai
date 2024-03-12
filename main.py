@@ -69,9 +69,13 @@ def test():
     config = load_config("classic")
     game = Game(config)
 
-    game.seed(0)
+    # game.seed(0)
     game.start()
     game.render()
+
+    for _ in range(5):
+        game.transition(Agent().select())
+        game.render()
 
     # while not game.terminal():
     #     pass
