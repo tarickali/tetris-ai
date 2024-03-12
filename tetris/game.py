@@ -1,12 +1,13 @@
 from __future__ import annotations
 from typing import Any
 from enum import Enum
-import random
+from random import Random
 
 import numpy as np
 
 from .grid import Grid
 from .tetromino import Tetromino
+from utils import save_json, load_json
 
 
 class GameAction(Enum):
@@ -40,6 +41,8 @@ class Game:
 
         self._tetromino_bag_size = 7
         self._score_multipliers = [100, 200, 300, 400]
+
+        self.rng = Random()
 
     def start(self) -> None:
         self.grid = Grid(self.width, self.height)
@@ -115,7 +118,7 @@ class Game:
         return not self.grid.check_valid(self.current_tetromino)
 
     def generate_tetrominos(self, k: int) -> str | list[str]:
-        tetrominos = random.choices(population=list(self.shapes), k=k)
+        tetrominos = self.rng.choices(population=list(self.shapes), k=k)
         return tetrominos if k > 1 else tetrominos[0]
 
     def create_tetromino(self, kind: str, position: tuple[int, int]) -> Tetromino:
@@ -136,6 +139,36 @@ class Game:
 
         # Clear hold state if tetromino was placed
         self.can_hold = True
+
+    def seed(self, root: int) -> None:
+        self.rng.seed(root)
+
+    def load(self, path: str) -> None:
+        state = load_json(path)
+
+        self.grid.load(state["grid"])
+        self.next_tetrominos = [self.itos[s] for s in state["next_tetrominos"]]
+        self.held_tetromino = self.itos[state["held_tetromino"]]
+        self.score = state["score"]
+        self.lines = state["lines"]
+        if state.get("rng"):
+            self.rng.setstate(
+                tuple(
+                    tuple(rinfo) if isinstance(rinfo, list) else rinfo
+                    for rinfo in state["rng"]
+                )
+            )
+
+    def save(self, path: str, include_rng: bool = True) -> None:
+        # Change numpy arrays to list before saving
+        state = self.state()
+        state["grid"] = state["grid"].tolist()
+        state["next_tetrominos"] = state["next_tetrominos"].tolist()
+
+        if include_rng:
+            state["rng"] = self.rng.getstate()
+
+        save_json(path, state)
 
     def state(self) -> dict[str, Any]:
         grid = self.grid.state()

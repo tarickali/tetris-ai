@@ -53,6 +53,9 @@ class Grid:
                 lines += 1
         return lines
 
+    def load(self, state: list[list[int]]) -> None:
+        self.board = np.array(state)
+
     def state(self) -> np.ndarray:
         return self.board.copy()
 

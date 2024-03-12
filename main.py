@@ -45,8 +45,20 @@ def main():
     handler = InputHandler()
     agent = Agent()
 
+    game.seed(1)
     game.start()
+
+    # for _ in range(10):
+    #     game.transition(GameAction.DROP)
+
+    # print(game.state())
+
+    # path = Path.joinpath(Path.cwd(), "checkpoints/state_1.json")
+    # game.save(path, False)
+    # game.load(path)
+
     while not game.terminal():
+        # while False:
         command = agent.select()
         action = handler.process(command)
         game.transition(action)

@@ -1,3 +1,7 @@
+# Project-specific
+TODO.md
+checkpoints/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
