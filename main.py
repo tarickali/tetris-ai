@@ -76,7 +76,7 @@ def make_observation(state: dict[str, Any]) -> dict[str, Any]:
         "grid": state["grid"],
         "next": state["next_tetrominos"][0],
         "held": state["held_tetromino"],
-        "score": state["score"],
+        "info": state["info"],
     }
 
 
@@ -109,7 +109,7 @@ def test():
         print("==================================================")
         game.render()
 
-    print(history)
+    # print(history)
 
     game.seed(0)
     game.start()

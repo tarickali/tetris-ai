@@ -8,6 +8,9 @@ class Grid:
     def __init__(self, width: int, height: int) -> None:
         self.board = np.zeros((height, width), dtype=int)
 
+    def empty(self) -> None:
+        self.board = np.zeros_like(self.board)
+
     def check_inbounds(self, tetromino: Tetromino) -> bool:
         for x in range(tetromino.size[0]):
             for y in range(tetromino.size[1]):

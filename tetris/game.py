@@ -35,10 +35,7 @@ class Game:
         self.next_tetrominos: deque[str] = deque([])
         self.held_tetromino: str = ""
 
-        self.score: int = 0
-        self.lines: int = 0
-        self.level: int = 0
-        self.can_hold: bool = True
+        self.info = {}
 
         self._tetromino_bag_size = 7
         self._score_multipliers = [100, 200, 300, 400]
@@ -46,6 +43,7 @@ class Game:
         self.rng = Random()
 
     def start(self) -> None:
+        self.grid.empty()
         # Generate bag_size + 1 tetrominos with the last being used for the current tetromino
         self.next_tetrominos.extend(
             self.generate_tetrominos(self._tetromino_bag_size + 1)
@@ -55,10 +53,7 @@ class Game:
         )
         self.held_tetromino = ""
 
-        self.score = 0
-        self.lines = 0
-        self.level = 1
-        self.can_hold = True
+        self.info = {"score": 0, "lines": 0, "level": 1, "time": 0, "can_hold": True}
 
     def transition(self, action: GameAction = None) -> None:
         if action is None:
@@ -97,7 +92,7 @@ class Game:
                 if self.grid.check_valid(tetromino):
                     self.current_tetromino = tetromino
             case GameAction.HOLD:
-                if self.can_hold:
+                if self.info["can_hold"]:
                     # If no tetromino is currently being held, use the next tetromino
                     if not self.held_tetromino:
                         if len(self.next_tetrominos) == 0:
@@ -109,15 +104,30 @@ class Game:
                         self.held_tetromino, (self.width // 2, 0)
                     )
                     self.held_tetromino = tetromino.kind
-                    self.can_hold = False
+                    self.info["can_hold"] = False
         # TODO:
         # - Update level
         # - How does level affect game?
+
+        # Increment discrete time counter every transition
+        self.info["time"] += 1
 
         return self.state()
 
     def terminal(self) -> bool:
         return not self.grid.check_valid(self.current_tetromino)
+
+    def modify(self, info: dict[str, Any]) -> None:
+        """Change the info dictionary of the game.
+
+        Parameters
+        ----------
+        info : dict[str, Any]
+            The dictionary to modify the game's internal info dictionary with
+
+        """
+
+        self.info |= info
 
     def generate_tetrominos(self, k: int) -> str | list[str]:
         tetrominos = self.rng.choices(population=list(self.shapes), k=k)
@@ -131,8 +141,8 @@ class Game:
     def place(self, tetromino: Tetromino):
         self.grid.place(tetromino)
         lines = self.grid.clear_lines()
-        self.lines += lines
-        self.score += lines * self._score_multipliers[lines]
+        self.info["lines"] += lines
+        self.info["score"] += lines * self._score_multipliers[lines]
         if len(self.next_tetrominos) >= 1:
             self.current_tetromino = self.create_tetromino(
                 self.next_tetrominos.popleft(), (self.width // 2, 0)
@@ -144,14 +154,14 @@ class Game:
             )
 
         # Clear hold state if tetromino was placed
-        self.can_hold = True
+        self.info["can_hold"] = True
 
     def render(self) -> None:
         grid = self.grid.copy()
         grid.place(self.current_tetromino)
 
         print(
-            f"Curr: {self.current_tetromino.kind} | Next: {self.next_tetrominos[0]} | Held: {self.held_tetromino} || Score: {self.score} | Lines: {self.lines}"
+            f"curr: {self.current_tetromino.kind} | next: {self.next_tetrominos[0]} | held: {self.held_tetromino} || info: {self.info}"
         )
         grid.render()
 
@@ -165,8 +175,7 @@ class Game:
         self.current_tetromino = self.create_tetromino(**state["current_tetromino"])
         self.next_tetrominos = deque([self.itos[s] for s in state["next_tetrominos"]])
         self.held_tetromino = self.itos[state["held_tetromino"]]
-        self.score = state["score"]
-        self.lines = state["lines"]
+        self.info = state["info"]
         if state.get("rng"):
             self.rng.setstate(
                 tuple(
@@ -195,6 +204,5 @@ class Game:
             "current_tetromino": self.current_tetromino.state(),
             "next_tetrominos": np.array([self.stoi[s] for s in self.next_tetrominos]),
             "held_tetromino": self.stoi[self.held_tetromino],
-            "score": self.score,
-            "lines": self.lines,
+            "info": self.info,
         }
