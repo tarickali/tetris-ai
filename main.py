@@ -32,8 +32,11 @@ class InputHandler:
 
 
 class Agent:
+    def __init__(self) -> None:
+        self.rng = random.Random(0)
+
     def select(self, state: dict[str, Any]) -> int:
-        return random.randint(0, 4)
+        return self.rng.randint(0, 4)
 
 
 def main():
@@ -74,7 +77,8 @@ def main():
 def make_observation(state: dict[str, Any]) -> dict[str, Any]:
     return {
         "grid": state["grid"],
-        "next": state["next_tetrominos"][0],
+        "curr": state["current_tetromino"]["kind"],
+        "next": state["next_tetrominos"],
         "held": state["held_tetromino"],
         "info": state["info"],
     }
@@ -86,9 +90,9 @@ def test():
     agent = Agent()
 
     NUM_EPISODES = 1
-    EPISODE_LENGTH = 10
+    EPISODE_LENGTH = 100
 
-    game.seed(0)
+    game.seed()
     game.start()
 
     # for _ in range(NUM_EPISODES):
@@ -103,7 +107,9 @@ def test():
         action = GameAction(agent.select(observation))
         game.transition(action)
 
-        history.append((observation, action))
+        # history.append(
+        #     (observation["curr"], observation["next"], observation["held"], action)
+        # )
 
         print(f"Action: {action}")
         print("==================================================")
@@ -111,10 +117,10 @@ def test():
 
     # print(history)
 
-    game.seed(0)
-    game.start()
-    for state, action in history:
-        pass
+    # game.seed(0)
+    # game.start()
+    # for state, action in history:
+    #     pass
 
 
 def save_and_load():

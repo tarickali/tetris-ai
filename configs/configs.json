@@ -101,6 +101,34 @@
       "Z": [255, 0, 0],
       "I": [0, 255, 255],
       "O": [255, 255, 0]
+    },
+    "systems": {
+      "transition": {
+        "enforce-down": {
+          "active": true,
+          "actions": ["left", "right", "rotate"]
+        }
+      },
+      "scoring": {
+        "type": "lines",
+        "lines": [100, 300, 500, 800]
+      },
+      "generation": {
+        "bag-size": 7,
+        "next-size": 7,
+        "distribution": {
+          "type": "custom",
+          "weights": {
+            "T": 1,
+            "L": 1,
+            "J": 1,
+            "S": 1,
+            "Z": 1,
+            "I": 1,
+            "O": 1
+          }
+        }
+      }
     }
   }
 }
