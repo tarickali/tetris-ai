@@ -69,14 +69,14 @@ class Grid:
             print("|")
         print(" -" + "--" * self.width)
 
-    def load(self, state: list[list[int]]) -> None:
-        self.board = np.array(state)
-
     def copy(self) -> Grid:
         return copy.deepcopy(self)
 
-    def state(self) -> np.ndarray:
-        return self.board.copy()
+    def load(self, state: dict[str, list[list[int]]]) -> None:
+        self.board = np.array(state["board"])
+
+    def state(self) -> dict[str, np.ndarray]:
+        return {"board": self.board.copy()}
 
     @property
     def width(self) -> int:

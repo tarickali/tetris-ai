@@ -131,10 +131,10 @@ class Game:
         self.current_tetromino = self._create_tetromino(**state["current_tetromino"])
         # self.next_tetrominos = deque([self.itos[s] for s in state["next_tetrominos"]])
         self.next_tetrominos = deque(state["next_tetrominos"])
-        self.held_tetromino = self.itos[state["held_tetromino"]]
+        self.held_tetromino = state["held_tetromino"]
         self.info = state["info"]
 
-        self.bagged_tetrominos = [self.itos[s] for s in state["bagged_tetrominos"]]
+        self.bagged_tetrominos = state["bagged_tetrominos"]
 
         if state.get("rng"):
             self.rng.setstate(
@@ -146,11 +146,14 @@ class Game:
 
     def save(self, path: str, include_rng: bool = True) -> None:
         # Change numpy arrays to list before saving
-        state = self.state()
-        state["grid"] = state["grid"].tolist()
-        # state["next_tetrominos"] = state["next_tetrominos"].tolist()
-
-        state["bagged_tetrominos"] = [self.stoi[s] for s in self.bagged_tetrominos]
+        state = {
+            "grid": {"board": self.grid.board.tolist()},
+            "current_tetromino": self.current_tetromino.state(),
+            "next_tetrominos": list(self.next_tetrominos),
+            "held_tetromino": self.held_tetromino,
+            "info": self.info,
+            "bagged_tetrominos": self.bagged_tetrominos,
+        }
 
         if include_rng:
             state["rng"] = self.rng.getstate()
@@ -158,15 +161,15 @@ class Game:
         save_json(path, state)
 
     def state(self) -> dict[str, Any]:
-        grid = self.grid.copy()
-        grid.place(self.current_tetromino)
+        field = self.grid.copy()
+        field.place(self.current_tetromino)
 
         return {
-            "grid": grid.state(),
+            "field": field.board,
+            "grid": self.grid.state(),
             "current_tetromino": self.current_tetromino.state(),
-            # "next_tetrominos": np.array([self.stoi[s] for s in self.next_tetrominos]),
             "next_tetrominos": list(self.next_tetrominos),
-            "held_tetromino": self.stoi[self.held_tetromino],
+            "held_tetromino": self.held_tetromino,
             "info": self.info,
         }
 

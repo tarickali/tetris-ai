@@ -36,7 +36,7 @@ class Agent:
         self.rng = random.Random(0)
 
     def select(self, state: dict[str, Any]) -> int:
-        return self.rng.randint(0, 4)
+        return self.rng.choice([3, 5])
 
 
 def main():
@@ -120,7 +120,8 @@ def save_and_load():
     game.start()
 
     for _ in range(15):
-        game.transition(GameAction(3))
+        action = Agent().select({})
+        game.transition(GameAction(action))
 
     path = Path.joinpath(Path.cwd(), "checkpoints/state_1.json")
     game.save(path, False)
@@ -138,5 +139,5 @@ def save_and_load():
 
 if __name__ == "__main__":
     # main()
-    test()
-    # save_and_load()
+    # test()
+    save_and_load()
