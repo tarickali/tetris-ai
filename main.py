@@ -90,7 +90,7 @@ def test():
     agent = Agent()
 
     NUM_EPISODES = 1
-    EPISODE_LENGTH = 100
+    EPISODE_LENGTH = 10
 
     game.seed()
     game.start()

@@ -38,16 +38,138 @@ class Game:
         self.held_tetromino: str = ""
         self.info = {}
 
-        self._bag: list[str] = []
+        self.bagged_tetrominos: list[str] = []
 
         self._scoring_system = {}
         self._transition_system = {}
         self._generation_system = {}
-        self.setup_systems()
+        self._setup_systems()
 
         self.rng = Random()
 
-    def setup_systems(self) -> None:
+    def start(self) -> None:
+        self.grid.empty()
+        # Populate bagged and next tetrominos with initial sizes
+        self._populate_tetrominos()
+        self.current_tetromino = self._create_tetromino(
+            self.next_tetrominos.popleft(), (self.width // 2, 0)
+        )
+        # After creating a tetromino from next, make sure to populate tetrominos
+        self._populate_tetrominos()
+        self.held_tetromino = ""
+
+        self.info = {"score": 0, "lines": 0, "level": 1, "time": 0, "can_hold": True}
+
+    def transition(self, action: GameAction = None) -> None:
+        tetromino = self.current_tetromino.copy()
+        placed = False
+        match action:
+            case GameAction.RIGHT:
+                valid = self._move_tetromino((1, 0))
+            case GameAction.LEFT:
+                valid = self._move_tetromino((-1, 0))
+            case GameAction.DOWN:
+                valid = self._move_tetromino((0, 1))
+                if not valid:
+                    self._place()
+                    placed = True
+            case GameAction.DROP:
+                while self._move_tetromino((0, 1)):
+                    pass
+                self._place()
+                placed = True
+            case GameAction.ROTATE:
+                tetromino = self.current_tetromino.copy()
+                tetromino.rotate()
+                if self.grid.check_valid(tetromino):
+                    self.current_tetromino = tetromino
+            case GameAction.HOLD:
+                if self.info["can_hold"]:
+                    # If no tetromino is currently being held, use the next tetromino
+                    if not self.held_tetromino:
+                        self.held_tetromino = self.next_tetrominos.popleft()
+                        self._populate_tetrominos()
+                    self.current_tetromino = self._create_tetromino(
+                        self.held_tetromino, (self.width // 2, 0)
+                    )
+                    self.held_tetromino = tetromino.kind
+                    self.info["can_hold"] = False
+
+        # Apply additional functionality according to transition system
+        # Apply enforce-down
+        if (
+            not placed  # Rule: enforce-down only applies if the current tetromino was not placed
+            and self._transition_system["enforce-down"]["active"]
+            and action in self._transition_system["enforce-down"]["actions"]
+        ):
+            valid = self._move_tetromino((0, 1))
+            if not valid:
+                self._place()
+                placed = True
+
+        # Increment discrete time counter every transition
+        self.info["time"] += 1
+
+        return self.state()
+
+    def terminal(self) -> bool:
+        return not self.grid.check_valid(self.current_tetromino)
+
+    def render(self) -> None:
+        grid = self.grid.copy()
+        grid.place(self.current_tetromino)
+
+        print(
+            f"curr: {self.current_tetromino.kind} | next: {self.next_tetrominos[0]} | held: {self.held_tetromino} || info: {self.info}"
+        )
+        grid.render()
+
+    def seed(self, root: int = None) -> None:
+        self.rng.seed(root)
+
+    def load(self, path: str) -> None:
+        state = load_json(path)
+
+        self.grid.load(state["grid"])
+        self.current_tetromino = self._create_tetromino(**state["current_tetromino"])
+        self.next_tetrominos = deque([self.itos[s] for s in state["next_tetrominos"]])
+        self.held_tetromino = self.itos[state["held_tetromino"]]
+        self.info = state["info"]
+        if state.get("rng"):
+            self.rng.setstate(
+                tuple(
+                    tuple(rinfo) if isinstance(rinfo, list) else rinfo
+                    for rinfo in state["rng"]
+                )
+            )
+
+    def save(self, path: str, include_rng: bool = True) -> None:
+        # Change numpy arrays to list before saving
+        state = self.state()
+        state["grid"] = state["grid"].tolist()
+        state["next_tetrominos"] = state["next_tetrominos"].tolist()
+
+        if include_rng:
+            state["rng"] = self.rng.getstate()
+
+        save_json(path, state)
+
+    def state(self) -> dict[str, Any]:
+        grid = self.grid.copy()
+        grid.place(self.current_tetromino)
+
+        return {
+            "grid": grid.state(),
+            "current_tetromino": self.current_tetromino.state(),
+            "next_tetrominos": np.array([self.stoi[s] for s in self.next_tetrominos]),
+            "held_tetromino": self.stoi[self.held_tetromino],
+            "info": self.info,
+        }
+
+    ############################################################################
+    # Private Methods
+    ############################################################################
+    def _setup_systems(self) -> None:
         # Setup the scoring system
         # NOTE: if the maximum number of lines in a game is larger than the length
         # of scoring_system, then score adjustments will use the largest value.
@@ -107,98 +229,29 @@ class Game:
                         self.stoi[kind] - 1
                     ] = weight
 
-    def start(self) -> None:
-        self.grid.empty()
-        # Generate bag_size + 1 tetrominos with the last being used for the current tetromino
-        # self._bag = self.generate_tetrominos(self._generation_system["bag-size"])
-        self.next_tetrominos.extend(
-            self.generate_tetrominos(self._generation_system["bag-size"] + 1)
-        )
-        self.current_tetromino = self.create_tetromino(
-            self.next_tetrominos.popleft(), (self.width // 2, 0)
-        )
-        self.held_tetromino = ""
-
-        self.info = {"score": 0, "lines": 0, "level": 1, "time": 0, "can_hold": True}
-
-    def transition(self, action: GameAction = None) -> None:
-        tetromino = self.current_tetromino.copy()
-        placed = False
-        match action:
-            case GameAction.RIGHT:
-                valid = self.move_tetromino((1, 0))
-            case GameAction.LEFT:
-                valid = self.move_tetromino((-1, 0))
-            case GameAction.DOWN:
-                valid = self.move_tetromino((0, 1))
-                if not valid:
-                    self.place()
-                    placed = True
-            case GameAction.DROP:
-                while self.move_tetromino((0, 1)):
-                    pass
-                self.place()
-                placed = True
-            case GameAction.ROTATE:
-                tetromino = self.current_tetromino.copy()
-                tetromino.rotate()
-                if self.grid.check_valid(tetromino):
-                    self.current_tetromino = tetromino
-            case GameAction.HOLD:
-                if self.info["can_hold"]:
-                    # If no tetromino is currently being held, use the next tetromino
-                    if not self.held_tetromino:
-                        if len(self.next_tetrominos) == 0:
-                            self.next_tetrominos.extend(
-                                self.generate_tetrominos(
-                                    self._generation_system["bag-size"]
-                                )
-                            )
-                        self.held_tetromino = self.next_tetrominos.popleft()
-                    self.current_tetromino = self.create_tetromino(
-                        self.held_tetromino, (self.width // 2, 0)
-                    )
-                    self.held_tetromino = tetromino.kind
-                    self.info["can_hold"] = False
-
-        # Apply additional functionality according to transition system
-        # Apply enforce-down
-        if (
-            not placed  # Rule: enforce-down only applies if the current tetromino was not placed
-            and self._transition_system["enforce-down"]["active"]
-            and action in self._transition_system["enforce-down"]["actions"]
-        ):
-            valid = self.move_tetromino((0, 1))
-            if not valid:
-                self.place()
-                placed = True
-
-        # Increment discrete time counter every transition
-        self.info["time"] += 1
-
-        return self.state()
-
-    def terminal(self) -> bool:
-        return not self.grid.check_valid(self.current_tetromino)
-
-    def generate_tetrominos(self, k: int) -> str | list[str]:
-        # Calculate the gap between number of next tetrominos and fixed minimum
-        # gap = max(len(self.next_tetrominos), self._generation_system["next-size"])
-        # Generate
-        # k = math.ceil(self._generation_system["bag-size"] / gap)
-
+    def _generate_tetrominos(self) -> str | list[str]:
+        k = self._generation_system["bag-size"]
         weights = self._generation_system["distribution"]
         tetrominos = self.rng.choices(
             population=sorted(self.shapes), weights=weights, k=k
         )
         return tetrominos if k > 1 else tetrominos[0]
 
-    def create_tetromino(
+    def _create_tetromino(
         self, kind: str, position: tuple[int, int], rotation: int = 0
     ) -> Tetromino:
         return Tetromino(kind, position, rotation, self.stoi[kind], self.shapes[kind])
 
-    def move_tetromino(self, direction: tuple[int, int]) -> bool:
+    def _populate_tetrominos(self) -> None:
+        # Populate next tetrominos only when they are less than the required size
+        if len(self.next_tetrominos) < self._generation_system["next-size"]:
+            gap = self._generation_system["next-size"] - len(self.next_tetrominos)
+            if gap > len(self.bagged_tetrominos):
+                self.bagged_tetrominos.extend(self._generate_tetrominos())
+            for _ in range(gap):
+                self.next_tetrominos.extend(self.bagged_tetrominos.pop())
+
+    def _move_tetromino(self, direction: tuple[int, int]) -> bool:
         tetromino = self.current_tetromino.copy()
         tetromino.position = (
             tetromino.position[0] + direction[0],
@@ -211,7 +264,7 @@ class Game:
         else:
             return False
 
-    def place(self, tetromino: Tetromino = None) -> None:
+    def _place(self, tetromino: Tetromino = None) -> None:
         if tetromino is None:
             tetromino = self.current_tetromino
         self.grid.place(tetromino)
@@ -223,66 +276,10 @@ class Game:
             lines = min(lines, len(self._scoring_system["scores"]))
             self.info["score"] += self._scoring_system["scores"][lines]
 
-        if len(self.next_tetrominos) >= 1:
-            self.current_tetromino = self.create_tetromino(
-                self.next_tetrominos.popleft(), (self.width // 2, 0)
-            )
-        # Generate new tetrominos if all the next tetrominos have been used
-        if len(self.next_tetrominos) == 0:
-            self.next_tetrominos.extend(
-                self.generate_tetrominos(self._generation_system["bag-size"])
-            )
+        self.current_tetromino = self._create_tetromino(
+            self.next_tetrominos.popleft(), (self.width // 2, 0)
+        )
+        self._populate_tetrominos()
 
         # Clear hold state if tetromino was placed
         self.info["can_hold"] = True
-
-    def render(self) -> None:
-        grid = self.grid.copy()
-        grid.place(self.current_tetromino)
-
-        print(
-            f"curr: {self.current_tetromino.kind} | next: {self.next_tetrominos[0]} | held: {self.held_tetromino} || info: {self.info}"
-        )
-        grid.render()
-
-    def seed(self, root: int = None) -> None:
-        self.rng.seed(root)
-
-    def load(self, path: str) -> None:
-        state = load_json(path)
-
-        self.grid.load(state["grid"])
-        self.current_tetromino = self.create_tetromino(**state["current_tetromino"])
-        self.next_tetrominos = deque([self.itos[s] for s in state["next_tetrominos"]])
-        self.held_tetromino = self.itos[state["held_tetromino"]]
-        self.info = state["info"]
-        if state.get("rng"):
-            self.rng.setstate(
-                tuple(
-                    tuple(rinfo) if isinstance(rinfo, list) else rinfo
-                    for rinfo in state["rng"]
-                )
-            )
-
-    def save(self, path: str, include_rng: bool = True) -> None:
-        # Change numpy arrays to list before saving
-        state = self.state()
-        state["grid"] = state["grid"].tolist()
-        state["next_tetrominos"] = state["next_tetrominos"].tolist()
-
-        if include_rng:
-            state["rng"] = self.rng.getstate()
-
-        save_json(path, state)
-
-    def state(self) -> dict[str, Any]:
-        grid = self.grid.copy()
-        grid.place(self.current_tetromino)
-
-        return {
-            "grid": grid.state(),
-            "current_tetromino": self.current_tetromino.state(),
-            "next_tetrominos": np.array([self.stoi[s] for s in self.next_tetrominos]),
-            "held_tetromino": self.stoi[self.held_tetromino],
-            "info": self.info,
-        }
