@@ -3,9 +3,6 @@ from typing import Any
 from collections import deque
 from enum import Enum
 from random import Random
-import math
-
-import numpy as np
 
 from .grid import Grid
 from .tetromino import Tetromino
@@ -132,9 +129,13 @@ class Game:
 
         self.grid.load(state["grid"])
         self.current_tetromino = self._create_tetromino(**state["current_tetromino"])
-        self.next_tetrominos = deque([self.itos[s] for s in state["next_tetrominos"]])
+        # self.next_tetrominos = deque([self.itos[s] for s in state["next_tetrominos"]])
+        self.next_tetrominos = deque(state["next_tetrominos"])
         self.held_tetromino = self.itos[state["held_tetromino"]]
         self.info = state["info"]
+
+        self.bagged_tetrominos = [self.itos[s] for s in state["bagged_tetrominos"]]
+
         if state.get("rng"):
             self.rng.setstate(
                 tuple(
@@ -147,7 +148,9 @@ class Game:
         # Change numpy arrays to list before saving
         state = self.state()
         state["grid"] = state["grid"].tolist()
-        state["next_tetrominos"] = state["next_tetrominos"].tolist()
+        # state["next_tetrominos"] = state["next_tetrominos"].tolist()
+
+        state["bagged_tetrominos"] = [self.stoi[s] for s in self.bagged_tetrominos]
 
         if include_rng:
             state["rng"] = self.rng.getstate()
@@ -161,7 +164,8 @@ class Game:
         return {
             "grid": grid.state(),
             "current_tetromino": self.current_tetromino.state(),
-            "next_tetrominos": np.array([self.stoi[s] for s in self.next_tetrominos]),
+            # "next_tetrominos": np.array([self.stoi[s] for s in self.next_tetrominos]),
+            "next_tetrominos": list(self.next_tetrominos),
             "held_tetromino": self.stoi[self.held_tetromino],
             "info": self.info,
         }

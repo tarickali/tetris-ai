@@ -50,18 +50,7 @@ def main():
     handler = InputHandler()
     agent = Agent()
 
-    game.seed(1)
-    game.start()
-
-    for _ in range(10):
-        game.transition(GameAction(3))
-
-    path = Path.joinpath(Path.cwd(), "checkpoints/state_1.json")
-    game.save(path, False)
-    # game.load(path)
-
-    # while not game.terminal():
-    while False:
+    while not game.terminal():
         command = agent.select()
         action = handler.process(command)
         game.transition(action)
@@ -126,13 +115,25 @@ def test():
 def save_and_load():
     config = load_config("classic")
     game = Game(config)
+
+    game.seed(1)
+    game.start()
+
+    for _ in range(15):
+        game.transition(GameAction(3))
+
+    path = Path.joinpath(Path.cwd(), "checkpoints/state_1.json")
+    game.save(path, False)
+
+    print(game.state())
+    print(game.bagged_tetrominos)
+
+    game.start()
     path = Path.joinpath(Path.cwd(), "checkpoints/state_1.json")
     game.load(path)
 
     print(game.state())
-
-    # while not game.terminal():
-    #     pass
+    print(game.bagged_tetrominos)
 
 
 if __name__ == "__main__":
