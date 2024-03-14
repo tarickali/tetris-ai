@@ -1,6 +1,8 @@
 from __future__ import annotations
 import copy
 import numpy as np
+
+from utils.game_utils import put_shape_in_array
 from .tetromino import Tetromino
 
 
@@ -40,15 +42,9 @@ class Grid:
         return self.check_inbounds(tetromino) and not self.check_overlap(tetromino)
 
     def place(self, tetromino: Tetromino) -> None:
-        for x in range(tetromino.size[0]):
-            for y in range(tetromino.size[1]):
-                # Skip white-space of the tetromino
-                if tetromino.shape[y][x] == 0:
-                    continue
-                # Set the value at the grid positino to the tetromino's kind
-                self.board[tetromino.position[1] + y][
-                    tetromino.position[0] + x
-                ] = tetromino.num
+        put_shape_in_array(
+            self.board, tetromino.shape, tetromino.position, tetromino.num
+        )
 
     def clear_lines(self) -> int:
         lines = 0

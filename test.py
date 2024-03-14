@@ -2,7 +2,7 @@ from typing import Any
 import random
 
 from tetris.game import Game, GameAction
-from utils.train_utils import calculate_bumpiness, calculate_height, calculate_holes
+from utils.game_utils import calculate_bumpiness, calculate_height, calculate_holes
 from configs import load_config
 
 

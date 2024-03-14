@@ -111,7 +111,7 @@
       },
       "scoring": {
         "type": "lines",
-        "lines": [100, 300, 500, 800]
+        "lines": [0, 100, 300, 500, 800]
       },
       "generation": {
         "bag-size": 7,

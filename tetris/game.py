@@ -4,9 +4,9 @@ from collections import deque
 from enum import Enum
 from random import Random
 
+from utils.file_utils import save_json, load_json
 from .grid import Grid
 from .tetromino import Tetromino
-from utils import save_json, load_json
 
 
 class GameAction(Enum):
@@ -55,10 +55,26 @@ class Game:
         self._populate_tetrominos()
         self.held_tetromino = ""
 
-        self.info = {"score": 0, "lines": 0, "level": 1, "time": 0, "can_hold": True}
+        self.info = {
+            "main": {
+                "score": 0,
+                "lines": 0,
+                "time": 0,
+                "can_hold": True,
+            },
+            "extra": {
+                "last_valid": True,
+                "total_valid": 0,
+                "last_placed": False,
+                "total_placed": 0,
+                "score_diff": 0,
+            },
+        }
 
     def transition(self, action: GameAction = None) -> None:
         tetromino = self.current_tetromino.copy()
+        lines = 0
+        valid = False
         placed = False
         match action:
             case GameAction.RIGHT:
@@ -68,20 +84,22 @@ class Game:
             case GameAction.DOWN:
                 valid = self._move_tetromino((0, 1))
                 if not valid:
-                    self._place()
+                    lines = self._place()
                     placed = True
             case GameAction.DROP:
                 while self._move_tetromino((0, 1)):
                     pass
-                self._place()
+                lines = self._place()
+                valid = True
                 placed = True
             case GameAction.ROTATE:
                 tetromino = self.current_tetromino.copy()
                 tetromino.rotate()
-                if self.grid.check_valid(tetromino):
+                valid = self.grid.check_valid(tetromino)
+                if valid:
                     self.current_tetromino = tetromino
             case GameAction.HOLD:
-                if self.info["can_hold"]:
+                if self.info["main"]["can_hold"]:
                     # If no tetromino is currently being held, use the next tetromino
                     if not self.held_tetromino:
                         self.held_tetromino = self.next_tetrominos.popleft()
@@ -90,9 +108,10 @@ class Game:
                         self.held_tetromino, (self.width // 2, 0)
                     )
                     self.held_tetromino = tetromino.kind
-                    self.info["can_hold"] = False
+                    self.info["main"]["can_hold"] = False
+                    valid = True
 
-        # Apply additional functionality according to transition system
+        # Apply additional functionality according to the transition system
         # Apply enforce-down
         if (
             not placed  # Rule: enforce-down only applies if the current tetromino was not placed
@@ -101,11 +120,34 @@ class Game:
         ):
             valid = self._move_tetromino((0, 1))
             if not valid:
-                self._place()
+                lines = self._place()
                 placed = True
 
+        # Update info
+        if placed:
+            self.current_tetromino = self._create_tetromino(
+                self.next_tetrominos.popleft(), (self.width // 2, 0)
+            )
+            self._populate_tetrominos()
+
+            # Clear hold state if tetromino was placed
+            self.info["main"]["can_hold"] = True
+
+        ##########
+
         # Increment discrete time counter every transition
-        self.info["time"] += 1
+        prev_score = self.info["main"]["score"]
+
+        self.info["main"]["time"] += 1
+        self.info["main"]["lines"] += lines
+        lines = min(lines, len(self._scoring_system["scores"]))
+        self.info["main"]["score"] += self._scoring_system["scores"][lines]
+
+        self.info["extra"]["last_valid"] = valid
+        self.info["extra"]["total_valid"] += valid
+        self.info["extra"]["last_placed"] = placed
+        self.info["extra"]["total_placed"] += placed
+        self.info["extra"]["score_diff"] = self.info["main"]["score"] - prev_score
 
         return self.state()
 
@@ -161,11 +203,7 @@ class Game:
         save_json(path, state)
 
     def state(self) -> dict[str, Any]:
-        field = self.grid.copy()
-        field.place(self.current_tetromino)
-
         return {
-            "field": field.board,
             "grid": self.grid.state(),
             "current_tetromino": self.current_tetromino.state(),
             "next_tetrominos": list(self.next_tetrominos),
@@ -271,22 +309,11 @@ class Game:
         else:
             return False
 
-    def _place(self, tetromino: Tetromino = None) -> None:
+    def _place(self, tetromino: Tetromino = None) -> int:
         if tetromino is None:
             tetromino = self.current_tetromino
         self.grid.place(tetromino)
 
         lines = self.grid.clear_lines()
-        self.info["lines"] += lines
 
-        if lines != 0:
-            lines = min(lines, len(self._scoring_system["scores"]))
-            self.info["score"] += self._scoring_system["scores"][lines]
-
-        self.current_tetromino = self._create_tetromino(
-            self.next_tetrominos.popleft(), (self.width // 2, 0)
-        )
-        self._populate_tetrominos()
-
-        # Clear hold state if tetromino was placed
-        self.info["can_hold"] = True
+        return lines

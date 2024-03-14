@@ -1,6 +1,37 @@
 import numpy as np
 
-__all__ = ["calculate_bumpiness", "calculate_height", "calculate_holes"]
+__all__ = [
+    "put_shape_in_array",
+    "calculate_bumpiness",
+    "calculate_height",
+    "calculate_holes",
+]
+
+
+def put_shape_in_array(
+    board: np.ndarray,
+    shape: list[list[int]],
+    position: tuple[int, int],
+    num: int,
+    inplace: bool = True,
+) -> np.ndarray:
+    if not inplace:
+        board = board.copy()
+
+    for y in range(len(shape)):
+        for x in range(len(shape[y])):
+            # Skip white-space of the block
+            if shape[y][x] == 0:
+                continue
+            if not (
+                0 <= position[1] + y < board.shape[1]
+                and 0 <= position[0] + x < board.shape[0]
+            ):
+                raise KeyError(f"Index out of range. Cannot put block in array.")
+            # Set the value at the grid positino to num
+            board[position[1] + y][position[0] + x] = num
+
+    return board
 
 
 def calculate_bumpiness(board: np.ndarray) -> tuple[int, int]:
