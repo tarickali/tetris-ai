@@ -24,6 +24,7 @@ class Tetromino:
     def copy(self) -> Tetromino:
         return copy.deepcopy(self)
 
+    @property
     def state(self) -> dict[str, Any]:
         return {"kind": self.kind, "position": self.position, "rotation": self.rotation}
 

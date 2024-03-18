@@ -7,8 +7,8 @@ from .tetromino import Tetromino
 
 
 class Grid:
-    def __init__(self, width: int, height: int) -> None:
-        self.board = np.zeros((height, width), dtype=int)
+    def __init__(self, shape: tuple[int, int]) -> None:
+        self.board = np.zeros(shape, dtype=int)
 
     def empty(self) -> None:
         self.board = np.zeros_like(self.board)
@@ -71,8 +71,9 @@ class Grid:
     def load(self, state: dict[str, list[list[int]]]) -> None:
         self.board = np.array(state["board"])
 
+    @property
     def state(self) -> dict[str, np.ndarray]:
-        return {"board": self.board.copy()}
+        return {"board": self.board}
 
     @property
     def width(self) -> int:

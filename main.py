@@ -6,7 +6,7 @@ from pathlib import Path
 
 from tetris.game import Game, GameAction
 from renderer import Renderer
-from configs import load_config
+from utils import load_config
 
 FPS = 60
 DELAY_TIME = 60
@@ -91,7 +91,7 @@ def test():
 
     game.render()
     for _ in range(EPISODE_LENGTH):
-        state = game.state()
+        state = game.state
         observation = make_observation(state)
         action = GameAction(agent.select(observation))
         game.transition(action)
@@ -126,14 +126,14 @@ def save_and_load():
     path = Path.joinpath(Path.cwd(), "checkpoints/state_1.json")
     game.save(path, False)
 
-    print(game.state())
+    print(game.state)
     print(game.bagged_tetrominos)
 
     game.start()
     path = Path.joinpath(Path.cwd(), "checkpoints/state_1.json")
     game.load(path)
 
-    print(game.state())
+    print(game.state)
     print(game.bagged_tetrominos)
 
 

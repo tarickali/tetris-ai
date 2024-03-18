@@ -3,7 +3,7 @@ import random
 
 from tetris.game import Game, GameAction
 from utils.game_utils import calculate_bumpiness, calculate_height, calculate_holes
-from configs import load_config
+from utils import load_config
 
 
 class Agent:
@@ -37,8 +37,8 @@ def test_1():
     # game.render()
     for _ in range(EPISODE_LENGTH):
         game.render()
-        state = game.state()
-        action = GameAction(agent.select())
+        state = game.state
+        action = agent.select()
         print(f"bumpiness: {calculate_bumpiness(state['grid']['board'])}")
         print(f"holes: {calculate_holes(state['grid']['board'])}")
         print(f"height: {calculate_height(state['grid']['board'])}")
